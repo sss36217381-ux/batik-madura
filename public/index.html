@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoBatik Madura - Prototype WebGIS Pemetaan Sentra & Motif Batik Madura</title>
+  
+  <!-- Google Fonts: Poppins & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            nilai: '#1F345F',       // Warna utama
+            soga: '#8B5A2B',        // Warna sekunder cokelat soga
+            bata: '#B23A2B',        // Warna aksen merah bata
+            krem: '#F5ECD7',        // Warna latar krem
+            tulang: '#FAF7F0',      // Putih tulang
+            emas: '#D4AF37'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Poppins', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #FAF7F0;
+      color: #1e293b;
+    }
+    h1, h2, h3, h4, h5, h6, .font-display {
+      font-family: 'Poppins', sans-serif;
+    }
+    #map {
+      height: 100%;
+      width: 100%;
+      z-index: 10;
+    }
+    .custom-popup .leaflet-popup-content-wrapper {
+      padding: 0;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+    .custom-popup .leaflet-popup-content {
+      margin: 0;
+      line-height: 1.4;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .batik-pattern-bg {
+      background-color: #1F345F;
+      background-image: radial-gradient(#8B5A2B 0.75px, transparent 0.75px), radial-gradient(#8B5A2B 0.75px, #1F345F 0.75px);
+      background-size: 30px 30px;
+      background-position: 0 0, 15px 15px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-tulang text-slate-800">
+
+  <!-- ================= NAVBAR ================= -->
+  <nav class="bg-nilai text-white sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo & Brand -->
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTab('beranda')">
+          <div class="w-10 h-10 rounded-full bg-soga flex items-center justify-center border-2 border-krem shadow-inner">
+            <i class="fa-solid fa-compass-drafting text-krem text-xl"></i>
+          </div>
+          <div>
+            <span class="font-display font-bold text-xl tracking-tight text-white flex items-center gap-1.5">
+              GeoBatik <span class="text-emas">Madura</span>
+            </span>
+            <p class="text-[10px] text-krem/80 hidden sm:block tracking-wide uppercase font-medium">WebGIS Sentra & Motif Batik Madura</p>
+          </div>
+        </div>
+
+        <!-- Desktop Navigation Links -->
+        <div class="hidden md:flex items-center space-x-1">
+          <button onclick="navigateTab('beranda')" id="nav-beranda" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors text-white">
+            <i class="fa-solid fa-house mr-1.5 text-emas"></i> Beranda
+          </button>
+          <button onclick="navigateTab('peta')" id="nav-peta" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors text-krem">
+            <i class="fa-solid fa-map-location-dot mr-1.5 text-bata"></i> Peta WebGIS
+          </button>
+          <button onclick="navigateTab('motif')" id="nav-motif" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors text-krem">
+            <i class="fa-solid fa-palette mr-1.5 text-emas"></i> Katalog Motif
+          </button>
+          <button onclick="navigateTab('tentang')" id="nav-tentang" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors text-krem">
+            <i class="fa-solid fa-circle-info mr-1.5 text-blue-300"></i> Tentang
+          </button>
+        </div>
+
+        <!-- User / Auth Buttons -->
+        <div class="flex items-center space-x-3">
+          <div id="auth-buttons-guest" class="flex items-center space-x-2">
+            <button onclick="openAuthModal('login')" class="px-4 py-2 text-sm font-medium text-white hover:text-krem transition-colors">
+              Masuk
+            </button>
+            <button onclick="openAuthModal('register')" class="px-4 py-2 text-sm font-semibold bg-soga hover:bg-soga/90 text-krem rounded-lg shadow transition">
+              Daftar
+            </button>
+          </div>
+
+          <div id="auth-buttons-user" class="hidden flex items-center space-x-2">
+            <!-- Role Badge -->
+            <span id="nav-user-role-badge" class="hidden sm:inline-block text-xs font-semibold px-2.5 py-1 rounded-full uppercase bg-white/20 text-krem">
+              Admin
+            </span>
+            <!-- Panel button based on role -->
+            <button id="btn-panel-admin" onclick="openAdminPanel()" class="hidden px-3 py-1.5 text-xs font-semibold bg-bata hover:bg-bata/90 text-white rounded-lg transition flex items-center gap-1.5">
+              <i class="fa-solid fa-gauge-high"></i> <span>Panel Admin</span>
+            </button>
+            <button id="btn-panel-perajin" onclick="openPerajinPanel()" class="hidden px-3 py-1.5 text-xs font-semibold bg-soga hover:bg-soga/90 text-white rounded-lg transition flex items-center gap-1.5">
+              <i class="fa-solid fa-shop"></i> <span>Usaha Saya</span>
+            </button>
+            <!-- User Dropdown Trigger -->
+            <div class="relative">
+              <button onclick="toggleUserDropdown()" class="flex items-center space-x-1.5 bg-white/10 px-3 py-1.5 rounded-lg text-sm hover:bg-white/20 transition">
+                <i class="fa-solid fa-circle-user text-emas text-base"></i>
+                <span id="nav-user-name" class="font-medium max-w-[120px] truncate">Akun</span>
+                <i class="fa-solid fa-chevron-down text-xs text-krem/70 ml-1"></i>
+              </button>
+              <div id="user-dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-white text-slate-800 rounded-xl shadow-xl border border-slate-100 py-1.5 z-50 text-sm">
+                <div class="px-4 py-2 border-b border-slate-100">
+                  <p id="dropdown-user-name" class="font-semibold text-slate-900 truncate">-</p>
+                  <p id="dropdown-user-email" class="text-xs text-slate-500 truncate">-</p>
+                </div>
+                <button onclick="handleLogout()" class="w-full text-left px-4 py-2 text-rose-600 hover:bg-rose-50 flex items-center gap-2">
+                  <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mobile Hamburger -->
+          <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg hover:bg-white/10 text-white">
+            <i class="fa-solid fa-bars text-lg"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-nilai border-t border-white/10 px-4 pt-2 pb-4 space-y-1">
+      <button onclick="navigateTab('beranda'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-sm text-white hover:bg-white/10">
+        <i class="fa-solid fa-house mr-2 text-emas"></i> Beranda
+      </button>
+      <button onclick="navigateTab('peta'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-sm text-white hover:bg-white/10">
+        <i class="fa-solid fa-map-location-dot mr-2 text-bata"></i> Peta WebGIS
+      </button>
+      <button onclick="navigateTab('motif'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-sm text-white hover:bg-white/10">
+        <i class="fa-solid fa-palette mr-2 text-emas"></i> Katalog Motif
+      </button>
+      <button onclick="navigateTab('tentang'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-sm text-white hover:bg-white/10">
+        <i class="fa-solid fa-circle-info mr-2 text-blue-300"></i> Tentang
+      </button>
+    </div>
+  </nav>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <main class="flex-1 flex flex-col">
+
+    <!-- ---------------- SECTION: BERANDA ---------------- -->
+    <section id="section-beranda" class="tab-content flex-1">
+      <!-- Hero Banner -->
+      <div class="batik-pattern-bg text-white py-16 px-4 sm:px-6 lg:px-8 border-b-4 border-soga relative overflow-hidden">
+        <div class="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+          <div class="max-w-2xl space-y-5 text-center md:text-left">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-soga/80 border border-krem/40 text-krem text-xs font-semibold uppercase tracking-wider">
+              <i class="fa-solid fa-award text-emas"></i> Prototype WebGIS Batik Madura
+            </div>
+            <h1 class="text-3xl sm:text-5xl font-extrabold font-display leading-tight tracking-tight">
+              Jelajahi Sentra & Motif Batik Madura dalam <span class="text-emas underline decoration-soga">Satu Peta</span>
+            </h1>
+            <p class="text-base sm:text-lg text-krem/90 font-light leading-relaxed">
+              Dokumentasi dan pemetaan geospasial sentra UMKM perajin batik, filosofi motif warisan leluhur, serta navigasi rute di 4 kabupaten: Bangkalan, Sampang, Pamekasan, dan Sumenep.
+            </p>
+            <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
+              <button onclick="navigateTab('peta')" class="px-6 py-3.5 bg-bata hover:bg-bata/90 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition flex items-center gap-2">
+                <i class="fa-solid fa-map-location-dot"></i> Buka Peta Interaktif
+              </button>
+              <button onclick="navigateTab('motif')" class="px-6 py-3.5 bg-white/10 hover:bg-white/20 text-krem font-semibold rounded-xl border border-white/20 transition flex items-center gap-2">
+                <i class="fa-solid fa-book-open"></i> Eksplorasi Motif Khas
+              </button>
+            </div>
+          </div>
+          <!-- Hero Card Highlights -->
+          <div class="w-full md:w-96 bg-white/95 backdrop-blur text-slate-800 p-6 rounded-2xl shadow-2xl border-t-4 border-bata">
+            <h3 class="font-display font-bold text-lg text-nilai flex items-center gap-2 mb-3">
+              <i class="fa-solid fa-chart-pie text-soga"></i> Statistik WebGIS
+            </h3>
+            <div class="grid grid-cols-2 gap-3 text-center">
+              <div class="bg-krem/50 p-3 rounded-xl border border-soga/20">
+                <p id="hero-stat-sentra" class="text-2xl font-bold font-display text-nilai">9</p>
+                <p class="text-xs font-medium text-slate-600">Sentra Batik</p>
+              </div>
+              <div class="bg-krem/50 p-3 rounded-xl border border-soga/20">
+                <p id="hero-stat-motif" class="text-2xl font-bold font-display text-soga">8</p>
+                <p class="text-xs font-medium text-slate-600">Motif Warisan</p>
+              </div>
+              <div class="bg-krem/50 p-3 rounded-xl border border-soga/20">
+                <p id="hero-stat-perajin" class="text-2xl font-bold font-display text-bata">5+</p>
+                <p class="text-xs font-medium text-slate-600">UMKM Perajin</p>
+              </div>
+              <div class="bg-krem/50 p-3 rounded-xl border border-soga/20">
+                <p class="text-2xl font-bold font-display text-nilai">4</p>
+                <p class="text-xs font-medium text-slate-600">Kabupaten</p>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-200 text-xs text-slate-500 flex items-center justify-between">
+              <span>Sistem Koordinat</span>
+              <span class="font-mono font-semibold text-nilai">WGS 84 (EPSG:4326)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Kabupaten Highlights -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="text-center max-w-2xl mx-auto mb-10">
+          <h2 class="text-2xl sm:text-3xl font-bold font-display text-nilai">4 Wilayah Budaya Batik Madura</h2>
+          <p class="text-slate-600 text-sm mt-2">Setiap kabupaten di Pulau Madura memiliki kekhasan warna, teknik, dan filosofi guratan canting tersendiri.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- Bangkalan -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition group cursor-pointer" onclick="filterByKabupatenDirect(1)">
+            <div class="h-2 w-16 bg-nilai rounded-full mb-4"></div>
+            <span class="text-xs font-bold text-nilai uppercase tracking-wider">Kabupaten</span>
+            <h3 class="font-display font-bold text-xl text-slate-900 group-hover:text-nilai transition">Bangkalan</h3>
+            <p class="text-xs text-slate-500 mt-2 line-clamp-2">Pusat batik gentongan legendaris Tanjungbumi dengan pewarnaan alami pekat dan perendaman berbulan-bulan.</p>
+            <div class="mt-4 flex items-center justify-between text-xs font-semibold text-nilai pt-3 border-t border-slate-100">
+              <span>Sentra Unggulan: Tanjungbumi</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </div>
+          <!-- Sampang -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition group cursor-pointer" onclick="filterByKabupatenDirect(2)">
+            <div class="h-2 w-16 bg-[#0e7490] rounded-full mb-4"></div>
+            <span class="text-xs font-bold text-[#0e7490] uppercase tracking-wider">Kabupaten</span>
+            <h3 class="font-display font-bold text-xl text-slate-900 group-hover:text-[#0e7490] transition">Sampang</h3>
+            <p class="text-xs text-slate-500 mt-2 line-clamp-2">Batik pesisir Camplong dengan inspirasi biota laut, flora pantai, serta corak maritim bernuansa cerah.</p>
+            <div class="mt-4 flex items-center justify-between text-xs font-semibold text-[#0e7490] pt-3 border-t border-slate-100">
+              <span>Sentra Unggulan: Camplong</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </div>
+          <!-- Pamekasan -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition group cursor-pointer" onclick="filterByKabupatenDirect(3)">
+            <div class="h-2 w-16 bg-soga rounded-full mb-4"></div>
+            <span class="text-xs font-bold text-soga uppercase tracking-wider">Kabupaten</span>
+            <h3 class="font-display font-bold text-xl text-slate-900 group-hover:text-soga transition">Pamekasan</h3>
+            <p class="text-xs text-slate-500 mt-2 line-clamp-2">Dikenal sebagai Kota Batik Madura, dengan sentra raksasa desa Klampar dan ribuan pembatik motif Sekar Jagad & Lancor.</p>
+            <div class="mt-4 flex items-center justify-between text-xs font-semibold text-soga pt-3 border-t border-slate-100">
+              <span>Sentra Unggulan: Klampar Proppo</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </div>
+          <!-- Sumenep -->
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition group cursor-pointer" onclick="filterByKabupatenDirect(4)">
+            <div class="h-2 w-16 bg-bata rounded-full mb-4"></div>
+            <span class="text-xs font-bold text-bata uppercase tracking-wider">Kabupaten</span>
+            <h3 class="font-display font-bold text-xl text-slate-900 group-hover:text-bata transition">Sumenep</h3>
+            <p class="text-xs text-slate-500 mt-2 line-clamp-2">Batik halus gaya Keraton Sumekar tempo doeloe seperti Melati Rinonce dan Daun Memba yang anggun.</p>
+            <div class="mt-4 flex items-center justify-between text-xs font-semibold text-bata pt-3 border-t border-slate-100">
+              <span>Sentra Unggulan: Pakandangan</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sentra Pilihan Populer -->
+      <div class="bg-white py-12 border-t border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+            <div>
+              <h2 class="text-2xl font-bold font-display text-nilai">Sentra Batik Unggulan</h2>
+              <p class="text-slate-500 text-sm">Rekomendasi galeri dan pusat UMKM batik terpopuler di Madura</p>
+            </div>
+            <button onclick="navigateTab('peta')" class="text-soga hover:text-soga/80 font-semibold text-sm flex items-center gap-1.5 self-start sm:self-auto">
+              Lihat Semua di Peta <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+          <div id="beranda-sentra-list" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Diisi otomatis oleh JavaScript -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------- SECTION: PETA WEBGIS (F-01 s/d F-08) ---------------- -->
+    <section id="section-peta" class="tab-content hidden flex-1 flex flex-col relative" style="height: calc(100vh - 64px);">
+      <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+
+        <!-- Sidebar Filter & Hasil Pencarian (Kiri - Sesuai Wireframe Bab 6.3) -->
+        <aside id="map-sidebar" class="w-full md:w-96 bg-white border-r border-slate-200 flex flex-col z-20 shadow-lg md:shadow-none transition-all duration-300">
+          <!-- Search Header -->
+          <div class="p-4 border-b border-slate-100 bg-tulang space-y-3">
+            <div class="relative">
+              <input type="text" id="filter-keyword" placeholder="Cari sentra, motif, atau alamat..." 
+                class="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-nilai focus:border-transparent transition shadow-sm">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+            </div>
+            
+            <!-- Quick Actions: Lokasiku & Reset -->
+            <div class="flex items-center gap-2">
+              <button onclick="locateUserPosition()" class="flex-1 py-2 px-3 bg-nilai hover:bg-nilai/90 text-white rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-crosshairs text-emas"></i> <span>Lokasiku (GPS)</span>
+              </button>
+              <button onclick="findNearestSentras()" class="flex-1 py-2 px-3 bg-soga hover:bg-soga/90 text-white rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-route"></i> <span>Sentra Terdekat</span>
+              </button>
+              <button onclick="resetFilters()" title="Reset Filter" class="p-2 text-slate-500 hover:text-bata hover:bg-slate-100 rounded-lg transition text-xs">
+                <i class="fa-solid fa-rotate-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Accordion / Select Controls -->
+          <div class="p-4 border-b border-slate-200 space-y-3 bg-white text-xs max-h-56 overflow-y-auto scrollbar-thin">
+            <!-- Filter Kabupaten -->
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Kabupaten</label>
+              <select id="filter-kabupaten" onchange="applyFilters()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-nilai">
+                <option value="all">Semua Kabupaten (4 Wilayah)</option>
+                <option value="1">Bangkalan</option>
+                <option value="2">Sampang</option>
+                <option value="3">Pamekasan</option>
+                <option value="4">Sumenep</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <!-- Filter Jenis Pewarna -->
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Jenis Pewarna</label>
+                <select id="filter-dye" onchange="applyFilters()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-nilai">
+                  <option value="all">Semua Pewarna</option>
+                  <option value="alami">Alami (Gentongan/Herbal)</option>
+                  <option value="sintetis">Sintetis</option>
+                </select>
+              </div>
+              <!-- Filter Teknik -->
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Teknik Pembuatan</label>
+                <select id="filter-technique" onchange="applyFilters()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-nilai">
+                  <option value="all">Semua Teknik</option>
+                  <option value="tulis">Batik Tulis</option>
+                  <option value="cap">Batik Cap</option>
+                  <option value="kombinasi">Kombinasi</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Filter Motif -->
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Pilihan Motif</label>
+              <select id="filter-motif" onchange="applyFilters()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-nilai">
+                <option value="all">Semua Motif Batik</option>
+              </select>
+            </div>
+
+            <!-- Filter Rentang Harga -->
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Rentang Harga (Rp)</label>
+              <div class="flex items-center gap-2">
+                <input type="number" id="filter-min-price" placeholder="Min" oninput="applyFiltersDebounced()" class="w-1/2 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                <span class="text-slate-400">-</span>
+                <input type="number" id="filter-max-price" placeholder="Maks" oninput="applyFiltersDebounced()" class="w-1/2 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+              </div>
+            </div>
+          </div>
+
+          <!-- Results Header & Counter -->
+          <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Daftar Hasil Pencarian</span>
+            <span id="results-count" class="font-bold text-nilai bg-krem px-2 py-0.5 rounded-full">0 Sentra</span>
+          </div>
+
+          <!-- List of Sentra Cards -->
+          <div id="sentra-results-list" class="flex-1 overflow-y-auto p-3 space-y-2.5 scrollbar-thin">
+            <!-- Diisi otomatis melalui renderSearchResults() -->
+          </div>
+        </aside>
+
+        <!-- Map Container (Kanan) -->
+        <div class="flex-1 relative h-full">
+          <!-- Leaflet Map -->
+          <div id="map"></div>
+
+          <!-- Floating Map Control: Basemap Switcher & Layer Toggles (F-03) -->
+          <div class="absolute top-4 right-4 z-[500] bg-white/95 backdrop-blur p-2.5 rounded-xl shadow-lg border border-slate-200 text-xs space-y-2 max-w-xs">
+            <div class="font-bold text-nilai flex items-center gap-1.5 pb-1 border-b border-slate-100">
+              <i class="fa-solid fa-layer-group text-soga"></i> <span>Layer & Peta Dasar</span>
+            </div>
+            <!-- Base Maps -->
+            <div class="space-y-1">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="basemap" value="osm" checked onchange="switchBasemap('osm')" class="text-nilai">
+                <span>OpenStreetMap</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="basemap" value="satellite" onchange="switchBasemap('satellite')" class="text-nilai">
+                <span>Satelit (Esri World Imagery)</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="basemap" value="carto" onchange="switchBasemap('carto')" class="text-nilai">
+                <span>CartoDB Positron (Terang)</span>
+              </label>
+            </div>
+            <!-- Overlay Layers -->
+            <div class="pt-2 border-t border-slate-100 space-y-1">
+              <label class="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
+                <input type="checkbox" id="layer-toggle-kabupaten" checked onchange="toggleKabupatenLayer()" class="text-nilai rounded">
+                <span>Batas Kabupaten (Choropleth)</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer font-medium text-slate-700">
+                <input type="checkbox" id="layer-toggle-sentra" checked onchange="toggleSentraLayer()" class="text-nilai rounded">
+                <span>Titik Marker Sentra Batik</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Floating Map Legend (Pojok Kanan Bawah) -->
+          <div class="absolute bottom-6 right-4 z-[500] bg-white/95 backdrop-blur p-3 rounded-xl shadow-lg border border-slate-200 text-xs hidden sm:block">
+            <p class="font-bold text-slate-800 mb-1.5 flex items-center gap-1">
+              <i class="fa-solid fa-palette text-emas"></i> Legenda Wilayah
+            </p>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full inline-block bg-[#1F345F] border border-white shadow-sm"></span>
+                <span class="text-slate-600">Bangkalan</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full inline-block bg-[#0e7490] border border-white shadow-sm"></span>
+                <span class="text-slate-600">Sampang</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full inline-block bg-[#8B5A2B] border border-white shadow-sm"></span>
+                <span class="text-slate-600">Pamekasan</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full inline-block bg-[#B23A2B] border border-white shadow-sm"></span>
+                <span class="text-slate-600">Sumenep</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ---------------- SECTION: KATALOG MOTIF (F-06) ---------------- -->
+    <section id="section-motif" class="tab-content hidden flex-1 py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+      <div class="text-center max-w-3xl mx-auto mb-10">
+        <span class="text-xs font-bold text-soga uppercase tracking-wider bg-krem px-3 py-1 rounded-full border border-soga/30">
+          Warisan Luhur Budaya
+        </span>
+        <h2 class="text-3xl font-extrabold font-display text-nilai mt-3">Katalog Motif Batik Madura</h2>
+        <p class="text-slate-600 text-sm mt-2">
+          Jelajahi keindahan filosofi, makna spiritual, dan ciri visual unik dari setiap motif khas 4 kabupaten di Pulau Madura.
+        </p>
+      </div>
+
+      <!-- Motif Grid -->
+      <div id="motif-card-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Diisi otomatis melalui renderMotifCards() -->
+      </div>
+    </section>
+
+    <!-- ---------------- SECTION: TENTANG APLIKASI ---------------- -->
+    <section id="section-tentang" class="tab-content hidden flex-1 py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full">
+      <div class="bg-white rounded-3xl p-8 sm:p-12 shadow-sm border border-slate-200 space-y-8">
+        <div class="flex flex-col md:flex-row items-center gap-6 border-b border-slate-100 pb-8">
+          <div class="w-20 h-20 rounded-2xl bg-nilai flex items-center justify-center text-emas shadow-lg border-2 border-soga">
+            <i class="fa-solid fa-map-location-dot text-3xl"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-bold font-display text-nilai">Tentang GeoBatik Madura</h2>
+            <p class="text-soga font-semibold text-sm">Jelajahi Sentra dan Motif Batik Madura dalam Satu Peta</p>
+            <p class="text-xs text-slate-500 mt-1">Prototype WebGIS Geospasial Berbasis Standar WGS 84 (EPSG:4326)</p>
+          </div>
+        </div>
+
+        <!-- Profil Pengembang -->
+        <div class="bg-krem/40 rounded-2xl p-6 border border-soga/30 space-y-3">
+          <h3 class="font-display font-bold text-nilai flex items-center gap-2">
+            <i class="fa-solid fa-id-card text-soga"></i> Identitas Perancang & Pengembang
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Nama Mahasiswa</p>
+              <p class="font-bold text-slate-800 text-base">SARIFATUL MAIMUNA</p>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Nomor Pokok Mahasiswa (NPM)</p>
+              <p class="font-bold font-mono text-nilai text-base">20241230009</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spesifikasi Sistem -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+            <h4 class="font-bold text-nilai flex items-center gap-2">
+              <i class="fa-solid fa-database text-soga"></i> Struktur Basis Data Relasional
+            </h4>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Memiliki 9 tabel relasional (3 tabel spasial: <code>kabupaten</code>, <code>kecamatan</code>, <code>sentra_batik</code>; serta tabel pendukung: <code>perajin</code>, <code>motif</code>, <code>produk</code>, <code>galeri_foto</code>, <code>ulasan</code>, dan <code>pengguna</code>).
+            </p>
+          </div>
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+            <h4 class="font-bold text-nilai flex items-center gap-2">
+              <i class="fa-solid fa-shield-halved text-bata"></i> Aturan Bisnis & Validasi (BR-01 s/d BR-18)
+            </h4>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Dilengkapi 18 business rules mencakup autentikasi berbasis peran (RBAC), validasi rentang koordinat Madura, deteksi radius duplikasi minimal 50m, serta moderasi status ulasan & sentra.
+            </p>
+          </div>
+        </div>
+
+        <!-- Download Skrip SQL PostGIS Section 3.2 -->
+        <div class="pt-4 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100">
+          <div class="text-xs text-slate-500">
+            Tersedia skrip resmi DDL PostgreSQL + PostGIS di repositori: <code class="bg-slate-100 px-2 py-0.5 rounded text-nilai font-mono">database/schema_postgis.sql</code>
+          </div>
+          <a href="/api/export/geojson" download class="px-4 py-2 bg-nilai hover:bg-nilai/90 text-white text-xs font-semibold rounded-xl shadow transition flex items-center gap-2">
+            <i class="fa-solid fa-download"></i> Unduh Data GeoJSON
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= MODAL DETAIL SENTRA (F-04, F-07, F-09) ================= -->
+  <div id="modal-detail-sentra" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in my-auto">
+      <!-- Modal Header Banner -->
+      <div class="relative bg-nilai text-white p-6 pb-5 flex flex-col justify-end min-h-[160px] batik-pattern-bg">
+        <button onclick="closeSentraModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+        <div class="flex items-center gap-2 mb-2">
+          <span id="modal-sentra-kabupaten" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-soga text-krem">Bangkalan</span>
+          <span id="modal-sentra-status" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-700 text-white flex items-center gap-1">
+            <i class="fa-solid fa-circle-check"></i> Terverifikasi
+          </span>
+        </div>
+        <h3 id="modal-sentra-name" class="text-2xl font-bold font-display text-white">Nama Sentra Batik</h3>
+        <p id="modal-sentra-address" class="text-xs text-krem/90 mt-1 flex items-center gap-1.5">
+          <i class="fa-solid fa-location-dot text-bata"></i> <span>Alamat Lengkap</span>
+        </p>
+      </div>
+
+      <!-- Quick Action Buttons: Rute & WhatsApp -->
+      <div class="bg-tulang px-6 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-4 text-slate-600">
+          <span id="modal-sentra-hours" class="flex items-center gap-1.5"><i class="fa-regular fa-clock text-soga"></i> 08:00 - 17:00</span>
+          <span id="modal-sentra-phone" class="flex items-center gap-1.5"><i class="fa-solid fa-phone text-nilai"></i> 08123456789</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <a id="modal-sentra-route-btn" href="#" target="_blank" class="px-3.5 py-2 bg-nilai hover:bg-nilai/90 text-white rounded-lg font-semibold flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-route text-emas"></i> Buka Rute Peta (F-07)
+          </a>
+          <a id="modal-sentra-wa-btn" href="#" target="_blank" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold flex items-center gap-1.5 transition">
+            <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp Perajin
+          </a>
+        </div>
+      </div>
+
+      <!-- Modal Tabs -->
+      <div class="border-b border-slate-200 px-6 flex space-x-6 text-sm font-medium">
+        <button onclick="switchDetailTab('ringkasan')" id="tab-btn-ringkasan" class="py-3 border-b-2 border-nilai text-nilai font-semibold">Ringkasan</button>
+        <button onclick="switchDetailTab('produk')" id="tab-btn-produk" class="py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800">Koleksi Produk</button>
+        <button onclick="switchDetailTab('galeri')" id="tab-btn-galeri" class="py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800">Galeri Foto</button>
+        <button onclick="switchDetailTab('ulasan')" id="tab-btn-ulasan" class="py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800">Ulasan & Rating</button>
+      </div>
+
+      <!-- Modal Body Content -->
+      <div class="p-6 overflow-y-auto flex-1 scrollbar-thin">
+        <!-- Tab 1: Ringkasan -->
+        <div id="detail-tab-ringkasan" class="space-y-4">
+          <div>
+            <h4 class="text-sm font-bold text-nilai uppercase tracking-wider mb-1.5">Sejarah & Deskripsi Sentra</h4>
+            <p id="modal-sentra-desc" class="text-sm text-slate-600 leading-relaxed"></p>
+          </div>
+          <div class="pt-3 border-t border-slate-100">
+            <h4 class="text-sm font-bold text-nilai uppercase tracking-wider mb-2">Perajin Terkait di Sentra Ini</h4>
+            <div id="modal-sentra-perajin-list" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Koleksi Produk -->
+        <div id="detail-tab-produk" class="hidden">
+          <div id="modal-sentra-produk-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+        </div>
+
+        <!-- Tab 3: Galeri Foto -->
+        <div id="detail-tab-galeri" class="hidden">
+          <div id="modal-sentra-galeri-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+        </div>
+
+        <!-- Tab 4: Ulasan & Rating -->
+        <div id="detail-tab-ulasan" class="hidden space-y-6">
+          <!-- Form Beri Ulasan (F-09, BR-14, BR-15) -->
+          <div class="bg-tulang p-4 rounded-2xl border border-soga/20 space-y-3">
+            <h5 class="text-xs font-bold text-nilai uppercase tracking-wider">Tulis Ulasan Anda</h5>
+            <div id="review-auth-alert" class="hidden text-xs text-amber-800 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+              Silakan <button onclick="openAuthModal('login')" class="font-bold underline text-nilai">Masuk</button> terlebih dahulu untuk memberikan ulasan (BR-02).
+            </div>
+            <form id="form-add-review" onsubmit="submitReview(event)" class="space-y-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Rating Bintang (1 - 5)</label>
+                <div class="flex items-center gap-2" id="star-rating-selector">
+                  <button type="button" onclick="setRatingValue(1)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
+                  <button type="button" onclick="setRatingValue(2)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
+                  <button type="button" onclick="setRatingValue(3)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
+                  <button type="button" onclick="setRatingValue(4)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
+                  <button type="button" onclick="setRatingValue(5)" class="star-btn text-amber-400 text-xl"><i class="fa-solid fa-star"></i></button>
+                  <input type="hidden" id="review-rating-input" value="5">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Komentar Ulasan</label>
+                <textarea id="review-comment-input" rows="2" placeholder="Bagikan pengalaman Anda mengunjungi sentra batik ini..." required class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs focus:ring-1 focus:ring-nilai"></textarea>
+              </div>
+              <button type="submit" class="px-4 py-2 bg-soga hover:bg-soga/90 text-krem rounded-xl text-xs font-semibold shadow transition">
+                Kirim Ulasan
+              </button>
+            </form>
+          </div>
+
+          <!-- List Ulasan Tayang -->
+          <div>
+            <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Ulasan Pengunjung Terverifikasi</h5>
+            <div id="modal-sentra-ulasan-list" class="space-y-3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL AUTH (LOGIN / REGISTER) ================= -->
+  <div id="modal-auth" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-fade-in p-6 sm:p-8">
+      <div class="flex items-center justify-between mb-6">
+        <h3 id="auth-modal-title" class="text-xl font-bold font-display text-nilai">Masuk ke GeoBatik</h3>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Tabs: Login vs Register -->
+      <div class="flex rounded-xl bg-slate-100 p-1 mb-6 text-xs font-semibold">
+        <button id="auth-tab-login" onclick="switchAuthMode('login')" class="flex-1 py-2 rounded-lg bg-white shadow-sm text-nilai">Masuk</button>
+        <button id="auth-tab-register" onclick="switchAuthMode('register')" class="flex-1 py-2 rounded-lg text-slate-500">Daftar Baru</button>
+      </div>
+
+      <!-- Quick Demo Login Helpers -->
+      <div id="demo-login-box" class="mb-5 bg-krem/50 p-3 rounded-xl border border-soga/20 text-xs">
+        <p class="font-bold text-nilai mb-1 flex items-center gap-1">
+          <i class="fa-solid fa-key text-soga"></i> Akun Demo Uji Coba:
+        </p>
+        <div class="flex flex-wrap gap-1.5 mt-2">
+          <button type="button" onclick="fillDemo('admin')" class="px-2 py-1 bg-nilai text-white rounded text-[11px] font-medium hover:bg-nilai/90">
+            Admin (Disperindag)
+          </button>
+          <button type="button" onclick="fillDemo('perajin')" class="px-2 py-1 bg-soga text-white rounded text-[11px] font-medium hover:bg-soga/90">
+            Perajin (Pak Hasan)
+          </button>
+          <button type="button" onclick="fillDemo('pengunjung')" class="px-2 py-1 bg-slate-200 text-slate-800 rounded text-[11px] font-medium hover:bg-slate-300">
+            Pengunjung (Rina)
+          </button>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form id="form-auth" onsubmit="handleAuthSubmit(event)" class="space-y-4 text-xs">
+        <div id="field-register-name" class="hidden">
+          <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap</label>
+          <input type="text" id="auth-name" placeholder="Nama Anda" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-1 focus:ring-nilai">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Alamat Email</label>
+          <input type="email" id="auth-email" required placeholder="nama@email.com" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-1 focus:ring-nilai">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Kata Sandi (Minimal 8 Karakter)</label>
+          <input type="password" id="auth-password" required minlength="8" placeholder="••••••••" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-1 focus:ring-nilai">
+        </div>
+
+        <div id="field-register-role" class="hidden space-y-3 pt-1">
+          <label class="block font-semibold text-slate-700">Daftar Sebagai:</label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="auth-role" value="pengunjung" checked onchange="togglePerajinFields(false)">
+              <span>Pengunjung</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="auth-role" value="perajin" onchange="togglePerajinFields(true)">
+              <span>Perajin Batik</span>
+            </label>
+          </div>
+
+          <div id="field-perajin-extra" class="hidden space-y-2 pt-2 border-t border-slate-200">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Nama Usaha Batik</label>
+              <input type="text" id="auth-nama-usaha" placeholder="Contoh: Griya Batik Klampar" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">Nomor WhatsApp Usaha</label>
+              <input type="text" id="auth-whatsapp" placeholder="Contoh: 62812345678" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-auth-submit" class="w-full py-3 bg-nilai hover:bg-nilai/90 text-white font-bold rounded-xl shadow transition text-sm">
+          Masuk
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL PANEL ADMIN (F-12, F-13, F-14) ================= -->
+  <div id="modal-admin-panel" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] hidden flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+      <!-- Admin Header -->
+      <div class="bg-nilai text-white px-6 py-4 flex items-center justify-between border-b-4 border-bata">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-bata flex items-center justify-center text-white">
+            <i class="fa-solid fa-gauge-high"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-bold text-lg">Panel Manajemen Admin & Dinas</h3>
+            <p class="text-xs text-krem/80">Kelola Data Master, Titik Spasial, Moderasi, & Ekspor Data</p>
+          </div>
+        </div>
+        <button onclick="closeAdminPanel()" class="text-white/80 hover:text-white">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Admin Tabs Navigation -->
+      <div class="bg-slate-100 px-6 flex space-x-2 border-b border-slate-200 overflow-x-auto text-xs font-semibold py-2">
+        <button onclick="switchAdminTab('stats')" id="adm-tab-btn-stats" class="px-3.5 py-2 rounded-lg bg-white shadow-sm text-nilai">Ringkasan Statistik</button>
+        <button onclick="switchAdminTab('sentra')" id="adm-tab-btn-sentra" class="px-3.5 py-2 rounded-lg text-slate-600 hover:bg-white/50">Kelola Sentra (CRUD + Peta)</button>
+        <button onclick="switchAdminTab('verifikasi')" id="adm-tab-btn-verifikasi" class="px-3.5 py-2 rounded-lg text-slate-600 hover:bg-white/50">Moderasi Ulasan & Sentra</button>
+        <button onclick="switchAdminTab('motif')" id="adm-tab-btn-motif" class="px-3.5 py-2 rounded-lg text-slate-600 hover:bg-white/50">Katalog Motif</button>
+        <button onclick="switchAdminTab('perajin')" id="adm-tab-btn-perajin" class="px-3.5 py-2 rounded-lg text-slate-600 hover:bg-white/50">Data Perajin</button>
+        <button onclick="switchAdminTab('ekspor')" id="adm-tab-btn-ekspor" class="px-3.5 py-2 rounded-lg text-slate-600 hover:bg-white/50">Ekspor Laporan (CSV / GeoJSON)</button>
+      </div>
+
+      <!-- Admin Body -->
+      <div class="p-6 overflow-y-auto flex-1 text-xs scrollbar-thin">
+        
+        <!-- Tab 1: Stats -->
+        <div id="adm-content-stats" class="space-y-6">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200">
+              <p class="text-slate-500 font-medium">Total Sentra Batik</p>
+              <h4 id="adm-stat-sentra" class="text-2xl font-bold font-display text-nilai mt-1">0</h4>
+              <p id="adm-stat-sentra-sub" class="text-[10px] text-slate-400 mt-1">0 Terverifikasi / 0 Draft</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200">
+              <p class="text-slate-500 font-medium">Total Perajin</p>
+              <h4 id="adm-stat-perajin" class="text-2xl font-bold font-display text-soga mt-1">0</h4>
+              <p class="text-[10px] text-slate-400 mt-1">UMKM Terdaftar</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200">
+              <p class="text-slate-500 font-medium">Ulasan Menunggu</p>
+              <h4 id="adm-stat-ulasan" class="text-2xl font-bold font-display text-bata mt-1">0</h4>
+              <p class="text-[10px] text-slate-400 mt-1">Perlu Moderasi Admin</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+              <p class="text-slate-500 font-medium">Motif & Produk</p>
+              <h4 id="adm-stat-motif" class="text-2xl font-bold font-display text-emerald-800 mt-1">0</h4>
+              <p id="adm-stat-produk-sub" class="text-[10px] text-slate-400 mt-1">0 Koleksi Produk</p>
+            </div>
+          </div>
+
+          <!-- Sentra Per Kabupaten -->
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm mb-3">Distribusi Sebaran Sentra per Kabupaten</h4>
+            <div id="adm-kabupaten-distribution" class="grid grid-cols-1 sm:grid-cols-4 gap-3"></div>
+          </div>
+        </div>
+
+        <!-- Tab 2: CRUD Sentra + Map Picker (F-12) -->
+        <div id="adm-content-sentra" class="hidden space-y-6">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-sm text-nilai">Daftar Sentra Batik & Tambah Titik Baru</h4>
+            <button onclick="toggleFormAddSentra()" class="px-3.5 py-2 bg-nilai hover:bg-nilai/90 text-white rounded-xl font-semibold flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-plus"></i> <span>Tambah Sentra Baru</span>
+            </button>
+          </div>
+
+          <!-- Form Tambah/Ubah Sentra dengan Interactive Map Picker -->
+          <div id="form-add-sentra-container" class="hidden bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+            <h5 class="font-bold text-nilai text-xs uppercase tracking-wider">Formulir Sentra & Titik Koordinat Spasial</h5>
+            <form id="form-manage-sentra" onsubmit="handleSaveSentra(event)" class="space-y-3">
+              <input type="hidden" id="sentra-form-id" value="">
+              
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-semibold text-slate-700 mb-1">Nama Sentra / Galeri</label>
+                  <input type="text" id="sentra-form-name" required placeholder="Contoh: Sentra Batik Canteng" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-700 mb-1">Kecamatan</label>
+                  <select id="sentra-form-kecamatan" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+                    <!-- Diisi options kecamatan -->
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-semibold text-slate-700 mb-1">Jam Operasional</label>
+                  <input type="text" id="sentra-form-hours" placeholder="08:00 - 17:00 WIB" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                  <label class="block font-semibold text-slate-700 mb-1">No. Kontak / Telepon</label>
+                  <input type="text" id="sentra-form-phone" placeholder="08123456789" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+                </div>
+              </div>
+
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Alamat Lengkap</label>
+                <textarea id="sentra-form-address" rows="2" placeholder="Alamat jalan, desa, kabupaten..." class="w-full p-2 bg-white border border-slate-300 rounded-lg"></textarea>
+              </div>
+
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Deskripsi & Keunikan</label>
+                <textarea id="sentra-form-desc" rows="2" placeholder="Sejarah sentra, proses pewarnaan..." class="w-full p-2 bg-white border border-slate-300 rounded-lg"></textarea>
+              </div>
+
+              <!-- Interactive Mini Map Coordinate Picker -->
+              <div class="space-y-1.5 pt-2">
+                <label class="block font-semibold text-slate-700">Tentukan Titik Koordinat (Klik pada Peta di Bawah):</label>
+                <div id="picker-map" class="w-full h-56 rounded-xl border border-slate-300 z-10"></div>
+                <div class="flex items-center gap-3 pt-1">
+                  <div class="flex-1">
+                    <span class="text-[11px] text-slate-500">Latitude (Lat):</span>
+                    <input type="number" step="any" id="sentra-form-lat" required class="w-full p-2 bg-white border border-slate-300 rounded-lg font-mono">
+                  </div>
+                  <div class="flex-1">
+                    <span class="text-[11px] text-slate-500">Longitude (Lon):</span>
+                    <input type="number" step="any" id="sentra-form-lon" required class="w-full p-2 bg-white border border-slate-300 rounded-lg font-mono">
+                  </div>
+                  <div class="w-40">
+                    <span class="text-[11px] text-slate-500">Status:</span>
+                    <select id="sentra-form-status" class="w-full p-2 bg-white border border-slate-300 rounded-lg font-semibold">
+                      <option value="terverifikasi">Terverifikasi</option>
+                      <option value="draft">Draft</option>
+                    </select>
+                  </div>
+                </div>
+                <p class="text-[10px] text-slate-400">Aturan BR-06: Koordinat wajib berada di dalam wilayah Pulau Madura.</p>
+              </div>
+
+              <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" onclick="toggleFormAddSentra()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl font-semibold">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-nilai text-white rounded-xl font-bold shadow">Simpan Data Sentra</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Table Sentra -->
+          <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                <tr>
+                  <th class="p-3">ID</th>
+                  <th class="p-3">Nama Sentra</th>
+                  <th class="p-3">Kabupaten</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="adm-sentra-table-body" class="divide-y divide-slate-100 text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 3: Moderasi Ulasan & Verifikasi Sentra (F-13) -->
+        <div id="adm-content-verifikasi" class="hidden space-y-6">
+          <!-- Moderasi Ulasan -->
+          <div>
+            <h4 class="font-bold text-sm text-nilai mb-3">Moderasi Ulasan Pengunjung (Status: Menunggu / Tayang / Ditolak)</h4>
+            <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+              <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                  <tr>
+                    <th class="p-3">Sentra</th>
+                    <th class="p-3">Pengulas</th>
+                    <th class="p-3">Rating</th>
+                    <th class="p-3">Komentar</th>
+                    <th class="p-3">Status</th>
+                    <th class="p-3 text-right">Tindakan</th>
+                  </tr>
+                </thead>
+                <tbody id="adm-ulasan-table-body" class="divide-y divide-slate-100 text-slate-700"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Kelola Motif -->
+        <div id="adm-content-motif" class="hidden space-y-6">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-sm text-nilai">Katalog Master Motif Batik Madura</h4>
+            <button onclick="openAddMotifForm()" class="px-3.5 py-2 bg-soga hover:bg-soga/90 text-white rounded-xl font-semibold flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-plus"></i> <span>Tambah Motif</span>
+            </button>
+          </div>
+          <!-- Form Add Motif -->
+          <div id="adm-motif-form-container" class="hidden bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+            <h5 class="font-bold text-xs uppercase text-slate-700">Tambah Motif Baru</h5>
+            <form onsubmit="handleSaveMotif(event)" class="space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-semibold mb-1">Nama Motif</label>
+                  <input type="text" id="motif-form-name" required placeholder="Contoh: Gentongan" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Kabupaten Asal</label>
+                  <select id="motif-form-kabupaten" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+                    <option value="1">Bangkalan</option>
+                    <option value="2">Sampang</option>
+                    <option value="3">Pamekasan</option>
+                    <option value="4">Sumenep</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">Makna Filosofi</label>
+                <textarea id="motif-form-makna" rows="2" placeholder="Filosofi budaya motif..." class="w-full p-2 bg-white border border-slate-300 rounded-lg"></textarea>
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">Deskripsi Visual</label>
+                <textarea id="motif-form-desc" rows="2" placeholder="Ciri warna dan guratan..." class="w-full p-2 bg-white border border-slate-300 rounded-lg"></textarea>
+              </div>
+              <div class="flex justify-end gap-2">
+                <button type="button" onclick="openAddMotifForm()" class="px-3 py-1.5 bg-slate-200 rounded-lg">Batal</button>
+                <button type="submit" class="px-4 py-1.5 bg-soga text-white rounded-lg font-bold">Simpan Motif</button>
+              </div>
+            </form>
+          </div>
+          <div id="adm-motif-list" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+        </div>
+
+        <!-- Tab 5: Data Perajin -->
+        <div id="adm-content-perajin" class="hidden space-y-4">
+          <h4 class="font-bold text-sm text-nilai">Data UMKM Perajin Batik Terdaftar</h4>
+          <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Nama Usaha</th>
+                  <th class="p-3">Pemilik</th>
+                  <th class="p-3">Sentra</th>
+                  <th class="p-3">WhatsApp</th>
+                  <th class="p-3">Tahun Berdiri</th>
+                </tr>
+              </thead>
+              <tbody id="adm-perajin-table-body" class="divide-y divide-slate-100 text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 6: Ekspor Data (F-14) -->
+        <div id="adm-content-ekspor" class="hidden space-y-6">
+          <div class="max-w-xl mx-auto text-center space-y-4 py-6">
+            <div class="w-16 h-16 rounded-2xl bg-krem text-nilai flex items-center justify-center mx-auto text-2xl border border-soga/30">
+              <i class="fa-solid fa-file-export"></i>
+            </div>
+            <h4 class="font-display font-bold text-lg text-nilai">Ekspor Data Geospasial & Atribut</h4>
+            <p class="text-slate-600 text-xs leading-relaxed">
+              Unduh seluruh basis data sentra batik Madura dalam format standar industri GIS (GeoJSON) untuk analisis QGIS / ArcGIS, atau format tabel CSV untuk pelaporan dinas.
+            </p>
+            <div class="flex items-center justify-center gap-4 pt-2">
+              <a href="/api/export/geojson" download class="px-5 py-3 bg-nilai hover:bg-nilai/90 text-white rounded-xl font-bold shadow transition flex items-center gap-2">
+                <i class="fa-solid fa-globe"></i> <span>Unduh GeoJSON (WGS 84)</span>
+              </a>
+              <a href="/api/export/csv" download class="px-5 py-3 bg-soga hover:bg-soga/90 text-white rounded-xl font-bold shadow transition flex items-center gap-2">
+                <i class="fa-solid fa-file-csv"></i> <span>Unduh CSV (Excel)</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL PANEL PERAJIN (F-11, BR-03) ================= -->
+  <div id="modal-perajin-panel" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+      <div class="bg-soga text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-krem">
+            <i class="fa-solid fa-shop"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-bold text-lg">Panel Usaha & Produk Perajin</h3>
+            <p class="text-xs text-krem/80">Kelola Profil Usaha Sendiri dan Katalog Produk Anda</p>
+          </div>
+        </div>
+        <button onclick="closePerajinPanel()" class="text-white/80 hover:text-white">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-1 space-y-6 text-xs scrollbar-thin">
+        <!-- Profil Usaha -->
+        <div class="bg-tulang p-4 rounded-2xl border border-soga/30 space-y-3">
+          <h4 class="font-bold text-nilai text-xs uppercase tracking-wider">Profil Usaha Saya</h4>
+          <form id="form-perajin-profile" onsubmit="handleSavePerajinProfile(event)" class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-semibold mb-1">Nama Usaha</label>
+                <input type="text" id="perajin-edit-usaha" required class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">Nama Pemilik</label>
+                <input type="text" id="perajin-edit-pemilik" required class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-semibold mb-1">Nomor WhatsApp</label>
+                <input type="text" id="perajin-edit-wa" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">Tahun Berdiri</label>
+                <input type="number" id="perajin-edit-tahun" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400">Aturan BR-10: Perubahan data usaha akan ditinjau kembali oleh dinas/admin.</p>
+            <button type="submit" class="px-4 py-2 bg-soga text-white rounded-lg font-bold">Simpan Profil Usaha</button>
+          </form>
+        </div>
+
+        <!-- Produk Saya -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-nilai text-xs uppercase tracking-wider">Koleksi Produk Usaha Saya</h4>
+            <button onclick="toggleFormAddProduct()" class="px-3 py-1.5 bg-nilai text-white rounded-lg font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i> Tambah Produk
+            </button>
+          </div>
+
+          <!-- Form Tambah Produk -->
+          <div id="form-add-product-container" class="hidden bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+            <h5 class="font-bold text-xs uppercase text-slate-700">Form Produk Batik</h5>
+            <form onsubmit="handleSaveProduct(event)" class="space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-semibold mb-1">Nama Produk</label>
+                  <input type="text" id="prod-name" required placeholder="Kain Batik Tulis Primissima..." class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Motif</label>
+                  <select id="prod-motif" class="w-full p-2 bg-white border border-slate-300 rounded-lg"></select>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-semibold mb-1">Teknik (BR-13)</label>
+                  <select id="prod-technique" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+                    <option value="tulis">Batik Tulis</option>
+                    <option value="cap">Batik Cap</option>
+                    <option value="kombinasi">Kombinasi</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Pewarna (BR-13)</label>
+                  <select id="prod-dye" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+                    <option value="alami">Alami</option>
+                    <option value="sintetis">Sintetis</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block font-semibold mb-1">Harga Minimum (Rp)</label>
+                  <input type="number" id="prod-min-price" required placeholder="250000" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Harga Maksimum (Rp)</label>
+                  <input type="number" id="prod-max-price" required placeholder="500000" class="w-full p-2 bg-white border border-slate-300 rounded-lg">
+                </div>
+              </div>
+              <div class="flex justify-end gap-2">
+                <button type="button" onclick="toggleFormAddProduct()" class="px-3 py-1.5 bg-slate-200 rounded-lg">Batal</button>
+                <button type="submit" class="px-4 py-1.5 bg-nilai text-white rounded-lg font-bold">Simpan Produk</button>
+              </div>
+            </form>
+          </div>
+
+          <div id="perajin-my-products-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-[1000] flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Application Logic -->
+  <script src="/app.js"></script>
+</body>
+</html>
+
